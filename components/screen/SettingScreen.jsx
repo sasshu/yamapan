@@ -1,11 +1,12 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useCallback } from "react";
 import { Text, View, TouchableOpacity } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { SetPicker } from "../hooks/SetPicker";
-import { BoardContext } from "../stateProviders/BoardStateProvider";
+import { BoardContext } from "../providers/BoardStateProvider";
 import { InitModal } from "../modal/InitModal";
 import { Styles } from "../../Styles";
 import Icon from "react-native-vector-icons/MaterialIcons";
+import { DataProvider } from "../providers/DataProvider";
 
 export const SettingScreen = ({ navigation }) => {
   // Context内のState情報を取得
@@ -18,6 +19,7 @@ export const SettingScreen = ({ navigation }) => {
     goalPlate,
     setGoalPlate,
     setNeedPoint,
+    needPoint,
     setSealNum,
   } = useContext(BoardContext);
 
@@ -33,11 +35,14 @@ export const SettingScreen = ({ navigation }) => {
     stdText,
     multiplication,
     bbuttonText,
-    confirmButton,
     picker,
     pickerItem,
     initButton,
   } = Styles;
+
+  // データ取得
+  const { saveSetting, loadSetting, saveBoardData, saveCondition } =
+    DataProvider();
 
   // 初期化画面
   const [initModalVisible, setInitModalVisible] = useState(false);
@@ -54,23 +59,35 @@ export const SettingScreen = ({ navigation }) => {
     selectGoalPlate.push(index + 1);
   }
 
+  // 前回までのデータを復元
+  useEffect(() => {
+    loadSetting();
+  }, []);
+
   // 目標点更新
   useEffect(() => {
     let collectedPoint = 0;
     collects.map((collect) => {
       collectedPoint += collect;
     });
-    setNeedPoint(goalPoint * goalPlate - collectedPoint);
+    const newNeedPoint = goalPoint * goalPlate - collectedPoint;
+    setNeedPoint(newNeedPoint);
+    // storageに保存
+    saveCondition(newNeedPoint);
   }, [goalPoint, goalPlate]);
 
   // シール台紙を初期化
-  const initializeSeal = () => {
+  const initializeSeal = useCallback(() => {
     // 全てのシールを0点にする
     setCollects([...maxarea]);
     setSealNum(0);
     // 残りポイントを更新
-    setNeedPoint(() => goalPoint * goalPlate);
-  };
+    const newNeedPoint = goalPoint * goalPlate;
+    setNeedPoint(newNeedPoint);
+    // storageに保存
+    saveCondition(newNeedPoint);
+    saveBoardData([...maxarea], 0);
+  }, [goalPoint, goalPlate]);
 
   return (
     <View style={container}>
@@ -89,7 +106,10 @@ export const SettingScreen = ({ navigation }) => {
             <Text style={stdText}>お皿1枚の点数</Text>
             <Picker
               selectedValue={goalPoint}
-              onValueChange={(itemValue) => setGoalPoint(itemValue)}
+              onValueChange={(itemValue) => {
+                setGoalPoint(itemValue);
+                saveSetting(itemValue, goalPlate);
+              }}
               style={picker}
               itemStyle={pickerItem}
             >
@@ -101,7 +121,10 @@ export const SettingScreen = ({ navigation }) => {
             <Text style={stdText}>お皿の枚数</Text>
             <Picker
               selectedValue={goalPlate}
-              onValueChange={(itemValue) => setGoalPlate(itemValue)}
+              onValueChange={(itemValue) => {
+                setGoalPlate(itemValue);
+                saveSetting(goalPoint, itemValue);
+              }}
               style={picker}
               itemStyle={pickerItem}
             >

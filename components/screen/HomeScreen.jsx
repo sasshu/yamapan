@@ -1,10 +1,11 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useCallback } from "react";
 import { Text, View, TouchableOpacity, ScrollView } from "react-native";
-import { BoardContext } from "../stateProviders/BoardStateProvider";
+import { BoardContext } from "../providers/BoardStateProvider";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { AddModal } from "../modal/AddModal";
 import { DeleteModal } from "../modal/DeleteModal";
 import { Styles } from "../../Styles";
+import { DataProvider } from "../providers/DataProvider";
 
 export const HomeScreen = ({ navigation }) => {
   // StyleSheet情報を取得
@@ -31,6 +32,10 @@ export const HomeScreen = ({ navigation }) => {
     needPoint,
     setNeedPoint,
   } = useContext(BoardContext);
+
+  // データ取得
+  const { saveBoardData, loadBoardData, saveCondition, loadCondition } =
+    DataProvider();
 
   // シール位置
   const [position, setPosition] = useState(0);
@@ -61,40 +66,52 @@ export const HomeScreen = ({ navigation }) => {
     }
   }, [sealNum]);
 
+  // 前回までのデータを復元
+  useEffect(() => {
+    loadBoardData();
+    loadCondition();
+  }, []);
+
   // シールを追加
-  const addSeal = () => {
-    // シール情報をコピー
-    const newSeals = [...collects];
+  const addSeal = useCallback(() => {
     // 新たなポイント情報をシール台紙に追加
-    newSeals[position] = point;
-    setCollects(newSeals);
+    const newCollects = [...collects];
+    newCollects[position] = point;
+    setCollects(newCollects);
     // シール枚数を増やす
-    setSealNum(() => sealNum + 1);
+    const newSealNum = sealNum + 1;
+    setSealNum(newSealNum);
     // 残りポイントを更新
-    setNeedPoint(() => needPoint - point);
-  };
+    const newNeedPoint = needPoint - point;
+    setNeedPoint(newNeedPoint);
+    // storageに保存
+    saveCondition(newNeedPoint);
+    saveBoardData(newCollects, newSealNum);
+  }, [position, point]);
 
   // シールを削除
-  const deleteSeal = () => {
-    // シール情報をコピー
-    const newSeals = [...collects];
-    // 該当シールのポイントを取得
-    const delPoint = newSeals[position];
+  const deleteSeal = useCallback(() => {
     // 残りポイントを更新
-    setNeedPoint(needPoint + delPoint);
+    const newCollects = [...collects];
+    const newNeedPoint = needPoint + newCollects[position];
+    setNeedPoint(newNeedPoint);
     // ポイント情報を削除
-    newSeals[position] = 0;
-    setCollects(newSeals);
+    newCollects[position] = 0;
+    setCollects(newCollects);
     // シールの枚数を減らす
-    setSealNum(() => sealNum - 1);
-  };
+    const newSealNum = sealNum - 1;
+    setSealNum(newSealNum);
+    // storageに保存
+    saveCondition(newNeedPoint);
+    saveBoardData(newCollects, newSealNum);
+  }, [position]);
 
   // シールが貼られていない最初の位置を返す
-  const noSealPlace = () => {
+  const noSealPlace = useCallback(() => {
     for (let index = 0; index < collects.length; index++) {
       if (collects[index] == 0) return index;
     }
-  };
+  }, [collects]);
 
   return (
     <View style={container}>

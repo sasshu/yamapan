@@ -1,6 +1,6 @@
 import { HomeScreen } from "./components/screen/HomeScreen";
 import { SettingScreen } from "./components/screen/SettingScreen";
-import { BoardProvider } from "./components/stateProviders/BoardStateProvider";
+import { BoardProvider } from "./components/providers/BoardStateProvider";
 import { NavigationContainer, StackActions } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 

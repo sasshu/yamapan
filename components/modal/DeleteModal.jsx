@@ -1,6 +1,6 @@
 import { useContext } from "react";
 import { Text, View, TouchableOpacity, Modal } from "react-native";
-import { BoardContext } from "../stateProviders/BoardStateProvider";
+import { BoardContext } from "../providers/BoardStateProvider";
 import { Styles } from "../../Styles";
 
 export const DeleteModal = (props) => {
